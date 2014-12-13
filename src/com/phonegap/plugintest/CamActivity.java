@@ -25,6 +25,9 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.CompressFormat;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.hardware.Camera;
 import android.hardware.Camera.AutoFocusCallback;
 import android.hardware.Camera.PictureCallback;
@@ -50,10 +53,12 @@ public class CamActivity extends Activity {
 	private static final String TAG = "CamTestActivity";
 	Preview preview;
 	Button buttonClick;
+	Button buttonClick2;
 	Camera camera;
 	CamActivity act;
 	Context ctx;
 	private String callbackId;
+	private boolean black_white_button_clicked;
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -61,6 +66,8 @@ public class CamActivity extends Activity {
 		
 		ctx = this;
 		act = this;
+		
+		black_white_button_clicked = false;
 		
 		Bundle extras = act.getIntent().getExtras();
 		callbackId = extras.getString("callbackId");
@@ -118,6 +125,49 @@ public class CamActivity extends Activity {
 				return true;
 			}
 		});
+		
+		
+		// black/white button
+		
+		buttonClick2 = (Button) findViewById(this.getResource("btnCapture2", "id"));
+		
+		buttonClick2.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+//				preview.camera.takePicture(shutterCallback, rawCallback, jpegCallback);
+				Log.i("camera", "picture taken");
+				black_white_button_clicked = true;
+				
+				camera.takePicture(shutterCallback, rawCallback, jpegCallback);
+				
+				/* return data to plugin
+					ComponentName name = act.getCallingActivity();
+				Intent returnIntent = new Intent(act, name.getClass());
+				returnIntent.putExtra("result","some data");
+				setResult(RESULT_OK,returnIntent);
+				finish();
+				*/
+				
+				
+			}
+		});
+		
+		buttonClick2.setOnLongClickListener(new OnLongClickListener(){
+			@Override
+			public boolean onLongClick(View arg0) {
+				camera.autoFocus(new AutoFocusCallback(){
+					@Override
+					public void onAutoFocus(boolean arg0, Camera arg1) {
+						
+						Log.i("camera", "picture taken");
+						black_white_button_clicked = true;
+						
+						camera.takePicture(shutterCallback, rawCallback, jpegCallback);
+					}
+				});
+				return true;
+			}
+		});
+		
 	}
 	
 	private int getResource(String name, String type){
@@ -181,6 +231,37 @@ public class CamActivity extends Activity {
 			ByteArrayInputStream inStream = new ByteArrayInputStream(data);
 			ByteArrayOutputStream outStream = new ByteArrayOutputStream();
 			Bitmap bitmap = BitmapFactory.decodeStream(inStream);
+			
+			if(black_white_button_clicked){
+				
+				int height = bitmap.getHeight();
+				int width = bitmap.getWidth();
+				
+				double redFactor = 0.33;
+				double greenFactor = 0.59;
+				double blueFactor = 0.11;
+				
+				Bitmap bitmapClone = Bitmap.createBitmap(width, height, bitmap.getConfig());
+				
+				for (int h = 0; h < height; h++) {
+					for (int w = 0; w < width; w++) {
+						
+						int pixel = bitmap.getPixel(w,h);
+
+						int redValue = (int)(Color.red(pixel)*redFactor);
+						int greenValue = (int)(Color.green(pixel)*greenFactor);
+						int blueValue = (int)(Color.blue(pixel)*blueFactor);
+						
+						int combinedValue = redValue+greenValue+blueValue;
+						bitmapClone.setPixel(w, h, Color.rgb(combinedValue, combinedValue, combinedValue));
+						
+					}
+				}
+				
+				bitmap = bitmapClone;
+				
+			}
+			
 		    bitmap.compress(CompressFormat.JPEG, 70, outStream);
 		    
 			// get the base 64 string

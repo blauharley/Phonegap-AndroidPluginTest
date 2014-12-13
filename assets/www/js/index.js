@@ -37,6 +37,7 @@ var app = {
     },
     // Update DOM on a Received Event
     receivedEvent: function(id) {
+    	
         var parentElement = document.getElementById(id);
         var listeningElement = parentElement.querySelector('.listening');
         var receivedElement = parentElement.querySelector('.received');
@@ -46,12 +47,24 @@ var app = {
 
         console.log('Received Event: ' + id);
         
-        cordova.exec(
-            function(info){ document.getElementById('webcam_img').setAttribute('src', info); }, // success callback function
-            function(err){ console.log(err); }, // error callback function
-            'CameraPlugin', // mapped to our native Java class called "CalendarPlugin"
-            'callCamera', // with this action name
-            []
-        ); 
     }
 };
+
+function callCamera(){
+	
+	cordova.exec(
+        function(base64Img){ 
+        	
+        	document.getElementsByTagName('h3')[0].setAttribute('style', '');
+        	
+        	document.getElementById('webcam_img').setAttribute('src', base64Img); 
+        	document.getElementById('webcam_img').setAttribute('style', '');
+        	
+        }, // success callback function
+        function(err){ console.log(err); }, // error callback function
+        'CameraPlugin', // mapped to our native Java class called "CalendarPlugin"
+        'callCamera', // with this action name
+        []
+    ); 
+	
+}
